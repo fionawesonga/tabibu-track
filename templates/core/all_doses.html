@@ -1,0 +1,128 @@
+{% extends 'core/base.html' %}
+{% block title %}— Dose Records{% endblock %}
+{% block page_title %}Dose Records{% endblock %}
+{% block page_crumb %}Last 100 administered doses{% endblock %}
+{% block nav_doses %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-card {
+        background: #fff; border-radius: 14px;
+        border: 1px solid #e2e8f0; overflow: hidden;
+    }
+    .table-head {
+        padding: 18px 22px; border-bottom: 1px solid #e2e8f0;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .table-head-title { font-size: 15px; font-weight: 800; color: #1a202c; }
+    .table-count {
+        font-size: 14px; color: #a0aec0; font-weight: 600;
+        background: #f7fafc; border: 1px solid #e2e8f0;
+        padding: 4px 12px; border-radius: 99px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #f7fafc; }
+    th {
+        padding: 11px 20px; font-size: 13px; font-weight: 800;
+        color: #a0aec0; text-transform: uppercase;
+        letter-spacing: .07em; text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    td {
+        padding: 14px 20px; font-size: 15px; color: #2d3748;
+        border-bottom: 1px solid #f7fafc;
+        font-weight: 500; vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f7fafc; }
+    .td-patient { font-size: 15px; font-weight: 700; color: #1a202c; }
+    .td-med { font-size: 13px; color: #4a5568; font-weight: 600; }
+    .td-dosage {
+        font-size: 13px; font-weight: 700;
+        color: #0f4c35; background: #f0fff4;
+        border: 1px solid #c6f6d5;
+        padding: 2px 8px; border-radius: 99px;
+        margin-left: 6px;
+    }
+    .slot-pill {
+        display: inline-block; font-size: 13px; font-weight: 700;
+        padding: 3px 9px; border-radius: 99px;
+    }
+    .slot-morning { background: #fef3c7; color: #d97706; }
+    .slot-afternoon { background: #dbeafe; color: #2563eb; }
+    .slot-evening { background: #ede9fe; color: #7c3aed; }
+    .td-date { font-size: 13px; color: #4a5568; font-weight: 600; }
+    .td-time { font-size: 14px; color: #a0aec0; font-weight: 500; margin-top: 2px; }
+    .nurse-name { font-size: 13px; color: #4a5568; font-weight: 600; }
+    .done-tag {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 12px; font-weight: 700;
+        color: #276749; background: #f0fff4;
+        border: 1px solid #c6f6d5;
+        padding: 4px 12px; border-radius: 99px;
+    }
+    .done-tag svg {
+        width: 12px; height: 12px; stroke: currentColor;
+        fill: none; stroke-width: 2.5;
+        stroke-linecap: round; stroke-linejoin: round;
+    }
+    .empty-row td {
+        text-align: center; color: #a0aec0;
+        padding: 40px; font-size: 14px; font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-head">
+        <span class="table-head-title">Dose records</span>
+        <span class="table-count">{{ doses|length }} records</span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Patient</th>
+                <th>Medication</th>
+                <th>Slot</th>
+                <th>Date and time</th>
+                <th>Administered by</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for d in doses %}
+        <tr>
+            <td class="td-patient">{{ d.schedule.medication.patient.name }}</td>
+            <td>
+                <span class="td-med">{{ d.schedule.medication.name }}</span>
+                <span class="td-dosage">{{ d.schedule.medication.dosage }}</span>
+            </td>
+            <td>
+                <span class="slot-pill slot-{{ d.schedule.slot }}">
+                    {{ d.schedule.get_slot_display }}
+                </span>
+            </td>
+            <td>
+                <div class="td-date">{{ d.date|date:"d M Y" }}</div>
+                <div class="td-time">{{ d.administered_at|time:"H:i" }}</div>
+            </td>
+            <td class="nurse-name">
+                {{ d.administered_by.get_full_name|default:d.administered_by.username }}
+            </td>
+            <td>
+                <span class="done-tag">
+                    <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Administered
+                </span>
+            </td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row">
+            <td colspan="6">No dose records yet</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

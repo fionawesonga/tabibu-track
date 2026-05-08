@@ -1,0 +1,108 @@
+{% extends 'core/base.html' %}
+{% block title %}— All Patients{% endblock %}
+{% block page_title %}All Patients{% endblock %}
+{% block page_crumb %}System-wide patient list{% endblock %}
+{% block nav_patients %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-card {
+        background: #fff; border-radius: 14px;
+        border: 1px solid #e2e8f0; overflow: hidden;
+    }
+    .table-head {
+        padding: 18px 22px; border-bottom: 1px solid #e2e8f0;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .table-head-title { font-size: 15px; font-weight: 800; color: #1a202c; }
+    .table-count {
+        font-size: 14px; color: #a0aec0; font-weight: 600;
+        background: #f7fafc; border: 1px solid #e2e8f0;
+        padding: 4px 12px; border-radius: 99px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #f7fafc; }
+    th {
+        padding: 11px 20px; font-size: 13px; font-weight: 800;
+        color: #a0aec0; text-transform: uppercase;
+        letter-spacing: .07em; text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    td {
+        padding: 14px 20px; font-size: 15px; color: #2d3748;
+        border-bottom: 1px solid #f7fafc; font-weight: 500;
+        vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f7fafc; }
+    .td-name { font-size: 15px; font-weight: 700; color: #1a202c; }
+    .ward-tag {
+        display: inline-block; font-size: 11px; font-weight: 800;
+        color: #0f4c35; background: #f0fff4;
+        border: 1px solid #c6f6d5;
+        padding: 3px 10px; border-radius: 99px;
+        text-transform: uppercase; letter-spacing: .04em;
+    }
+    .nurse-name { font-size: 13px; color: #4a5568; font-weight: 600; }
+    .unassigned { font-size: 14px; color: #a0aec0; font-weight: 500; font-style: italic; }
+    .med-count {
+        display: inline-block; font-size: 12px; font-weight: 700;
+        color: #276749; background: #f0fff4;
+        border: 1px solid #c6f6d5;
+        padding: 3px 10px; border-radius: 99px;
+    }
+    .view-link {
+        font-size: 13px; font-weight: 700;
+        color: #0f4c35; text-decoration: none;
+        display: inline-flex; align-items: center; gap: 4px;
+    }
+    .view-link:hover { text-decoration: underline; }
+    .empty-row td {
+        text-align: center; color: #a0aec0;
+        padding: 40px; font-size: 14px; font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-head">
+        <span class="table-head-title">All patients</span>
+        <span class="table-count">{{ patients|length }} total</span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Ward</th>
+                <th>Date of birth</th>
+                <th>Assigned nurse</th>
+                <th>Medications</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for p in patients %}
+        <tr>
+            <td class="td-name">{{ p.name }}</td>
+            <td><span class="ward-tag">{{ p.ward }}</span></td>
+            <td>{{ p.date_of_birth|date:"d M Y" }}</td>
+            <td>
+                {% if p.assigned_nurse %}
+                <span class="nurse-name">{{ p.assigned_nurse.get_full_name|default:p.assigned_nurse.username }}</span>
+                {% else %}
+                <span class="unassigned">Unassigned</span>
+                {% endif %}
+            </td>
+            <td><span class="med-count">{{ p.medications.count }} med{{ p.medications.count|pluralize }}</span></td>
+            <td><a href="/patient/{{ p.id }}/" class="view-link">View &#8250;</a></td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row">
+            <td colspan="6">No patients found in the system</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

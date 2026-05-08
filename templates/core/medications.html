@@ -1,0 +1,102 @@
+{% extends 'core/base.html' %}
+{% block title %}— Medications{% endblock %}
+{% block page_title %}Medications{% endblock %}
+{% block page_crumb %}All active prescriptions{% endblock %}
+{% block nav_meds %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .table-card {
+        background: #fff; border-radius: 14px;
+        border: 1px solid #e2e8f0; overflow: hidden;
+    }
+    .table-head {
+        padding: 18px 22px; border-bottom: 1px solid #e2e8f0;
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .table-head-title { font-size: 15px; font-weight: 800; color: #1a202c; }
+    .table-count {
+        font-size: 14px; color: #a0aec0; font-weight: 600;
+        background: #f7fafc; border: 1px solid #e2e8f0;
+        padding: 4px 12px; border-radius: 99px;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #f7fafc; }
+    th {
+        padding: 11px 20px; font-size: 13px; font-weight: 800;
+        color: #a0aec0; text-transform: uppercase;
+        letter-spacing: .07em; text-align: left;
+        border-bottom: 1px solid #e2e8f0;
+    }
+    td {
+        padding: 14px 20px; font-size: 15px; color: #2d3748;
+        border-bottom: 1px solid #f7fafc;
+        font-weight: 500; vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #f7fafc; }
+    .td-name { font-size: 15px; font-weight: 700; color: #1a202c; }
+    .dosage-tag {
+        display: inline-block; font-size: 12px; font-weight: 700;
+        color: #0f4c35; background: #f0fff4;
+        border: 1px solid #c6f6d5;
+        padding: 3px 10px; border-radius: 99px;
+    }
+    .patient-name { font-size: 15px; font-weight: 600; color: #4a5568; }
+    .instructions-text { font-size: 14px; color: #a0aec0; font-weight: 500; }
+    .slot-pill {
+        display: inline-block; font-size: 13px; font-weight: 700;
+        padding: 3px 9px; border-radius: 99px; margin-right: 4px;
+    }
+    .slot-morning { background: #fef3c7; color: #d97706; }
+    .slot-afternoon { background: #dbeafe; color: #2563eb; }
+    .slot-evening { background: #ede9fe; color: #7c3aed; }
+    .empty-row td {
+        text-align: center; color: #a0aec0;
+        padding: 40px; font-size: 14px; font-weight: 500;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="table-card">
+    <div class="table-head">
+        <span class="table-head-title">Active medications</span>
+        <span class="table-count">{{ medications|length }} total</span>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Medication</th>
+                <th>Dosage</th>
+                <th>Patient</th>
+                <th>Schedule</th>
+                <th>Instructions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for m in medications %}
+        <tr>
+            <td class="td-name">{{ m.name }}</td>
+            <td><span class="dosage-tag">{{ m.dosage }}</span></td>
+            <td class="patient-name">{{ m.patient.name }}</td>
+            <td>
+                {% for schedule in m.schedules.all %}
+                <span class="slot-pill slot-{{ schedule.slot }}">
+                    {{ schedule.get_slot_display }}
+                </span>
+                {% empty %}
+                <span style="font-size:13px;color:#a0aec0;">No slots</span>
+                {% endfor %}
+            </td>
+            <td class="instructions-text">{{ m.instructions|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr class="empty-row">
+            <td colspan="5">No active medications found</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

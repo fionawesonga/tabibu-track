@@ -1,0 +1,320 @@
+{% extends 'core/base.html' %}
+{% block title %}— My Patients{% endblock %}
+{% block page_title %}My Patients{% endblock %}
+{% block page_crumb %}Prioritised by medication load and pending doses{% endblock %}
+{% block nav_home %}active{% endblock %}
+{% block nav_mypatients %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+    .summary-bar {
+        display: flex; align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px; flex-wrap: wrap; gap: 12px;
+    }
+    .summary-text { font-size: 15px; color: #718096; font-weight: 600; }
+    .summary-text strong { color: #1a202c; font-weight: 800; }
+
+    .priority-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+    .pstat {
+        display: flex; align-items: center; gap: 6px;
+        padding: 6px 14px; border-radius: 99px;
+        font-size: 13px; font-weight: 700; border: 1.5px solid;
+    }
+    .pstat-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .pstat.critical { background: #fff5f5; border-color: #fed7d7; color: #c53030; }
+    .pstat.critical .pstat-dot { background: #e53e3e; }
+    .pstat.high { background: #fffaf0; border-color: #fbd38d; color: #c05621; }
+    .pstat.high .pstat-dot { background: #ed8936; }
+    .pstat.medium { background: #ebf8ff; border-color: #bee3f8; color: #2b6cb0; }
+    .pstat.medium .pstat-dot { background: #3182ce; }
+    .pstat.low { background: #f0fff4; border-color: #c6f6d5; color: #276749; }
+    .pstat.low .pstat-dot { background: #38a169; }
+
+    .priority-key {
+        background: #fff; border-radius: 12px;
+        border: 1px solid #e2e8f0; padding: 14px 18px;
+        margin-bottom: 24px;
+        display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+    }
+    .key-title { font-size: 13px; font-weight: 800; color: #4a5568; margin-right: 4px; }
+    .key-item { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #4a5568; font-weight: 600; }
+    .key-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+    .priority-section { margin-bottom: 28px; }
+    .section-header {
+        display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+    }
+    .section-badge {
+        display: inline-flex; align-items: center; gap: 8px;
+        padding: 6px 16px; border-radius: 99px;
+        font-size: 13px; font-weight: 800; border: 1.5px solid;
+        white-space: nowrap;
+    }
+    .section-badge .badge-dot { width: 8px; height: 8px; border-radius: 50%; }
+    .badge-critical { background: #fff5f5; border-color: #feb2b2; color: #c53030; }
+    .badge-critical .badge-dot { background: #e53e3e; }
+    .badge-high { background: #fffaf0; border-color: #fbd38d; color: #c05621; }
+    .badge-high .badge-dot { background: #ed8936; }
+    .badge-medium { background: #ebf8ff; border-color: #bee3f8; color: #2b6cb0; }
+    .badge-medium .badge-dot { background: #3182ce; }
+    .badge-low { background: #f0fff4; border-color: #c6f6d5; color: #276749; }
+    .badge-low .badge-dot { background: #38a169; }
+    .section-line { flex: 1; height: 1px; background: #e2e8f0; }
+
+    .patient-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 14px;
+    }
+    .patient-card {
+        background: #fff; border-radius: 14px;
+        padding: 20px; border: 1.5px solid #e2e8f0;
+        text-decoration: none; color: inherit;
+        display: flex; flex-direction: column;
+        transition: all .15s; position: relative; overflow: hidden;
+    }
+    .patient-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+    .patient-card.card-critical { border-color: #feb2b2; }
+    .patient-card.card-critical:hover { box-shadow: 0 8px 24px rgba(229,62,62,.15); }
+    .patient-card.card-high { border-color: #fbd38d; }
+    .patient-card.card-high:hover { box-shadow: 0 8px 24px rgba(237,137,54,.12); }
+    .patient-card.card-medium { border-color: #bee3f8; }
+    .patient-card.card-medium:hover { box-shadow: 0 8px 24px rgba(49,130,206,.1); }
+    .patient-card.card-low { border-color: #c6f6d5; }
+    .patient-card.card-low:hover { box-shadow: 0 8px 24px rgba(56,161,105,.1); }
+
+    .card-top-bar { height: 3px; position: absolute; top: 0; left: 0; right: 0; }
+    .bar-critical { background: linear-gradient(90deg, #e53e3e, #fc8181); }
+    .bar-high { background: linear-gradient(90deg, #ed8936, #f6ad55); }
+    .bar-medium { background: linear-gradient(90deg, #3182ce, #63b3ed); }
+    .bar-low { background: linear-gradient(90deg, #38a169, #68d391); }
+
+    .card-header {
+        display: flex; justify-content: space-between;
+        align-items: flex-start; margin-bottom: 12px;
+    }
+    .pc-ward {
+        display: inline-block; font-size: 11px; font-weight: 800;
+        color: #0f4c35; background: #f0fff4; border: 1px solid #c6f6d5;
+        padding: 3px 10px; border-radius: 99px;
+        text-transform: uppercase; letter-spacing: .04em;
+    }
+    .priority-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 11px; font-weight: 800;
+        padding: 3px 10px; border-radius: 99px; border: 1.5px solid;
+    }
+    .priority-badge .p-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .pb-critical { background: #fff5f5; border-color: #feb2b2; color: #c53030; }
+    .pb-critical .p-dot { background: #e53e3e; }
+    .pb-high { background: #fffaf0; border-color: #fbd38d; color: #c05621; }
+    .pb-high .p-dot { background: #ed8936; }
+    .pb-medium { background: #ebf8ff; border-color: #bee3f8; color: #2b6cb0; }
+    .pb-medium .p-dot { background: #3182ce; }
+    .pb-low { background: #f0fff4; border-color: #c6f6d5; color: #276749; }
+    .pb-low .p-dot { background: #38a169; }
+
+    .pc-name { font-size: 17px; font-weight: 800; color: #1a202c; margin-bottom: 4px; }
+    .pc-dob { font-size: 13px; color: #a0aec0; font-weight: 500; margin-bottom: 10px; }
+
+    .pc-stats { display: flex; gap: 8px; margin-bottom: 4px; }
+    .pc-stat {
+        flex: 1; background: #f7fafc; border-radius: 8px;
+        padding: 8px 10px; text-align: center; border: 1px solid #e2e8f0;
+    }
+    .pc-stat-val { font-size: 18px; font-weight: 800; color: #0f4c35; line-height: 1; }
+    .pc-stat-label { font-size: 10px; font-weight: 700; color: #a0aec0; text-transform: uppercase; letter-spacing: .05em; margin-top: 3px; }
+    .pc-stat.stat-pending .pc-stat-val { color: #c53030; }
+    .pc-stat.stat-pending { border-color: #fed7d7; background: #fff5f5; }
+
+    .pc-divider { height: 1px; background: #f0f4f8; margin: 12px 0; }
+    .pc-footer { display: flex; justify-content: space-between; align-items: center; }
+    .pc-cta { font-size: 13px; color: #0f4c35; font-weight: 700; }
+
+    .empty-state {
+        background: #fff; border-radius: 14px;
+        border: 1px solid #e2e8f0; padding: 60px 40px; text-align: center;
+    }
+    .empty-icon {
+        width: 56px; height: 56px; background: #f0fff4; border-radius: 16px;
+        display: flex; align-items: center; justify-content: center; margin: 0 auto 18px;
+    }
+    .empty-icon svg { width: 28px; height: 28px; stroke: #0f4c35; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .empty-title { font-size: 16px; font-weight: 800; color: #1a202c; margin-bottom: 8px; }
+    .empty-sub { font-size: 14px; color: #a0aec0; font-weight: 500; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% if patient_data %}
+
+<div class="summary-bar">
+    <span class="summary-text">
+        <strong>{{ patient_data|length }}</strong>
+        patient{{ patient_data|length|pluralize }} assigned
+        &nbsp;&middot;&nbsp; {{ today|date:"l, d F Y" }}
+    </span>
+    <div class="priority-stats">
+        {% if critical %}<div class="pstat critical"><div class="pstat-dot"></div>{{ critical|length }} Critical</div>{% endif %}
+        {% if high %}<div class="pstat high"><div class="pstat-dot"></div>{{ high|length }} High</div>{% endif %}
+        {% if medium %}<div class="pstat medium"><div class="pstat-dot"></div>{{ medium|length }} Medium</div>{% endif %}
+        {% if low %}<div class="pstat low"><div class="pstat-dot"></div>{{ low|length }} Low</div>{% endif %}
+    </div>
+</div>
+
+<div class="priority-key">
+    <span class="key-title">Priority key:</span>
+    <div class="key-item"><div class="key-dot" style="background:#e53e3e"></div>Critical — 4+ meds or 3+ pending doses</div>
+    <div class="key-item"><div class="key-dot" style="background:#ed8936"></div>High — 3 meds or 2 pending</div>
+    <div class="key-item"><div class="key-dot" style="background:#3182ce"></div>Medium — 2 meds or 1 pending</div>
+    <div class="key-item"><div class="key-dot" style="background:#38a169"></div>Low — 1 med, all doses given</div>
+</div>
+
+{% if critical %}
+<div class="priority-section">
+    <div class="section-header">
+        <span class="section-badge badge-critical"><span class="badge-dot"></span>Critical — immediate attention required</span>
+        <div class="section-line"></div>
+    </div>
+    <div class="patient-grid">
+        {% for item in critical %}
+        <a href="/patient/{{ item.patient.id }}/" class="patient-card card-critical">
+            <div class="card-top-bar bar-critical"></div>
+            <div class="card-header">
+                <span class="pc-ward">{{ item.patient.ward }}</span>
+                <span class="priority-badge pb-critical"><span class="p-dot"></span>Critical</span>
+            </div>
+            <div class="pc-name">{{ item.patient.name }}</div>
+            <div class="pc-dob">DOB: {{ item.patient.date_of_birth|date:"d M Y" }}</div>
+            <div class="pc-stats">
+                <div class="pc-stat">
+                    <div class="pc-stat-val">{{ item.med_count }}</div>
+                    <div class="pc-stat-label">Medications</div>
+                </div>
+                <div class="pc-stat stat-pending">
+                    <div class="pc-stat-val">{{ item.pending_count }}</div>
+                    <div class="pc-stat-label">Pending doses</div>
+                </div>
+            </div>
+            <div class="pc-divider"></div>
+            <div class="pc-footer"><span class="pc-cta">View schedule &#8250;</span></div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if high %}
+<div class="priority-section">
+    <div class="section-header">
+        <span class="section-badge badge-high"><span class="badge-dot"></span>High priority</span>
+        <div class="section-line"></div>
+    </div>
+    <div class="patient-grid">
+        {% for item in high %}
+        <a href="/patient/{{ item.patient.id }}/" class="patient-card card-high">
+            <div class="card-top-bar bar-high"></div>
+            <div class="card-header">
+                <span class="pc-ward">{{ item.patient.ward }}</span>
+                <span class="priority-badge pb-high"><span class="p-dot"></span>High</span>
+            </div>
+            <div class="pc-name">{{ item.patient.name }}</div>
+            <div class="pc-dob">DOB: {{ item.patient.date_of_birth|date:"d M Y" }}</div>
+            <div class="pc-stats">
+                <div class="pc-stat">
+                    <div class="pc-stat-val">{{ item.med_count }}</div>
+                    <div class="pc-stat-label">Medications</div>
+                </div>
+                <div class="pc-stat stat-pending">
+                    <div class="pc-stat-val">{{ item.pending_count }}</div>
+                    <div class="pc-stat-label">Pending doses</div>
+                </div>
+            </div>
+            <div class="pc-divider"></div>
+            <div class="pc-footer"><span class="pc-cta">View schedule &#8250;</span></div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if medium %}
+<div class="priority-section">
+    <div class="section-header">
+        <span class="section-badge badge-medium"><span class="badge-dot"></span>Medium priority</span>
+        <div class="section-line"></div>
+    </div>
+    <div class="patient-grid">
+        {% for item in medium %}
+        <a href="/patient/{{ item.patient.id }}/" class="patient-card card-medium">
+            <div class="card-top-bar bar-medium"></div>
+            <div class="card-header">
+                <span class="pc-ward">{{ item.patient.ward }}</span>
+                <span class="priority-badge pb-medium"><span class="p-dot"></span>Medium</span>
+            </div>
+            <div class="pc-name">{{ item.patient.name }}</div>
+            <div class="pc-dob">DOB: {{ item.patient.date_of_birth|date:"d M Y" }}</div>
+            <div class="pc-stats">
+                <div class="pc-stat">
+                    <div class="pc-stat-val">{{ item.med_count }}</div>
+                    <div class="pc-stat-label">Medications</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-val">{{ item.pending_count }}</div>
+                    <div class="pc-stat-label">Pending doses</div>
+                </div>
+            </div>
+            <div class="pc-divider"></div>
+            <div class="pc-footer"><span class="pc-cta">View schedule &#8250;</span></div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if low %}
+<div class="priority-section">
+    <div class="section-header">
+        <span class="section-badge badge-low"><span class="badge-dot"></span>Low priority</span>
+        <div class="section-line"></div>
+    </div>
+    <div class="patient-grid">
+        {% for item in low %}
+        <a href="/patient/{{ item.patient.id }}/" class="patient-card card-low">
+            <div class="card-top-bar bar-low"></div>
+            <div class="card-header">
+                <span class="pc-ward">{{ item.patient.ward }}</span>
+                <span class="priority-badge pb-low"><span class="p-dot"></span>Low</span>
+            </div>
+            <div class="pc-name">{{ item.patient.name }}</div>
+            <div class="pc-dob">DOB: {{ item.patient.date_of_birth|date:"d M Y" }}</div>
+            <div class="pc-stats">
+                <div class="pc-stat">
+                    <div class="pc-stat-val">{{ item.med_count }}</div>
+                    <div class="pc-stat-label">Medications</div>
+                </div>
+                <div class="pc-stat">
+                    <div class="pc-stat-val">{{ item.pending_count }}</div>
+                    <div class="pc-stat-label">Pending doses</div>
+                </div>
+            </div>
+            <div class="pc-divider"></div>
+            <div class="pc-footer"><span class="pc-cta">View schedule &#8250;</span></div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+    </div>
+    <div class="empty-title">No patients assigned yet</div>
+    <div class="empty-sub">Ask your administrator to assign patients to your account</div>
+</div>
+{% endif %}
+{% endblock %}
